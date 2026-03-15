@@ -45,11 +45,48 @@ export class AuthManager {
 
   async getBrowser(): Promise<Browser> {
     logger.info('Launching browser');
+    // 清除代理环境变量
+    delete process.env.http_proxy;
+    delete process.env.https_proxy;
+    delete process.env.HTTP_PROXY;
+    delete process.env.HTTPS_PROXY;
+    delete process.env.all_proxy;
+    delete process.env.ALL_PROXY;
     // 始终创建新的浏览器实例，不复用之前的
-    this.browser = await chromium.launch({
-      headless: false,
-    });
+    if (!this.browser) {
+      this.browser = await chromium.launch({
+        headless: true,
+        args: ['--no-proxy-server'],
+      });
+    }
     return this.browser;
+  }
+
+  async getContext(): Promise<BrowserContext> {
+    logger.info('Getting or creating browser context');
+    if (!this.context) {
+      const browser = await this.getBrowser();
+      this.context = await browser.newContext({
+        ignoreHTTPSErrors: true,
+      });
+
+      // Load and add cookies
+      const cookies = await this.getCookies();
+      if (cookies && cookies.length > 0) {
+        logger.info(`Adding ${cookies.length} cookies to context`);
+        await this.context.addCookies(cookies);
+      }
+    }
+    return this.context;
+  }
+
+  async getPage(): Promise<Page> {
+    logger.info('Getting or creating page');
+    if (!this.page) {
+      const context = await this.getContext();
+      this.page = await context.newPage();
+    }
+    return this.page;
   }
 
   async getCookies(): Promise<Cookie[]> {
@@ -61,8 +98,16 @@ export class AuthManager {
     const timeoutSeconds = options?.timeout || 10
     logger.info(`Starting login process with timeout: ${timeoutSeconds}s`)
     const timeoutMs = timeoutSeconds * 1000
+    // 清除代理环境变量
+    delete process.env.http_proxy;
+    delete process.env.https_proxy;
+    delete process.env.HTTP_PROXY;
+    delete process.env.HTTPS_PROXY;
+    delete process.env.all_proxy;
+    delete process.env.ALL_PROXY;
     this.browser = await chromium.launch({
-      headless: false,
+      headless: true,
+      args: ['--no-proxy-server'],
       timeout: timeoutMs,
     })
     if (!this.browser) {
@@ -76,7 +121,9 @@ export class AuthManager {
     while (retryCount < maxRetries) {
       try {
         logger.info(`Login attempt ${retryCount + 1}/${maxRetries}`);
-        this.context = await this.browser.newContext();
+        this.context = await this.browser.newContext({
+          ignoreHTTPSErrors: true,
+        });
         this.page = await this.context.newPage();
 
         // Load existing cookies if available

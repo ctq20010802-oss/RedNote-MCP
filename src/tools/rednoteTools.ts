@@ -1,5 +1,5 @@
 import { AuthManager } from '../auth/authManager'
-import { Browser, Page } from 'playwright'
+import { Page } from 'playwright'
 import logger from '../utils/logger'
 import { GetNoteDetail, NoteDetail } from './noteDetail'
 
@@ -23,7 +23,6 @@ export interface Comment {
 
 export class RedNoteTools {
   private authManager: AuthManager
-  private browser: Browser | null = null
   private page: Page | null = null
 
   constructor() {
@@ -33,19 +32,12 @@ export class RedNoteTools {
 
   async initialize(): Promise<void> {
     logger.info('Initializing browser and page')
-    this.browser = await this.authManager.getBrowser()
-    if (!this.browser) {
-      throw new Error('Failed to initialize browser')
-    }
-    
+
     try {
-      this.page = await this.browser.newPage()
-      
-      // Load cookies if available
-      const cookies = await this.authManager.getCookies()
-      if (cookies.length > 0) {
-        logger.info(`Loading ${cookies.length} cookies`)
-        await this.page.context().addCookies(cookies)
+      // Use getPage which handles context creation and cookie loading
+      this.page = await this.authManager.getPage()
+      if (!this.page) {
+        throw new Error('Failed to initialize page')
       }
 
       // Check login status
@@ -76,16 +68,13 @@ export class RedNoteTools {
         await this.page.close().catch(err => logger.error('Error closing page:', err))
         this.page = null
       }
-      
-      if (this.browser) {
-        await this.browser.close().catch(err => logger.error('Error closing browser:', err))
-        this.browser = null
-      }
+
+      // Use authManager to clean up context and browser
+      await this.authManager.cleanup()
     } catch (error) {
       logger.error('Error during cleanup:', error)
     } finally {
       this.page = null
-      this.browser = null
     }
   }
 

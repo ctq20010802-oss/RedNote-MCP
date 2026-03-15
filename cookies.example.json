@@ -1,0 +1,32 @@
+[
+  {
+    "name": "a1",
+    "value": "your_cookie_value_here",
+    "domain": ".xiaohongshu.com",
+    "path": "/",
+    "expires": 1234567890,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "web_session",
+    "value": "your_session_value_here",
+    "domain": ".xiaohongshu.com",
+    "path": "/",
+    "expires": 1234567890,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "webId",
+    "value": "your_webId_value_here",
+    "domain": ".xiaohongshu.com",
+    "path": "/",
+    "expires": 1234567890,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "Lax"
+  }
+]
